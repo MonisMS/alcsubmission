@@ -47,6 +47,24 @@ describe("reorderBuffer", () => {
     expect(buf.frontier).toBe(3);
   });
 
+  it("a fresh (empty) buffer starts at frontier 0 and holds nothing", () => {
+    const buf = createReorderBuffer();
+    expect(buf.frontier).toBe(0);
+    // first thing it ever sees is the out-of-order seq 5 → parked, nothing released
+    expect(buf.push(tok(5))).toEqual([]);
+    expect(buf.frontier).toBe(0);
+  });
+
+  it("fills a gap mid-stream and flushes the backlog in one burst", () => {
+    const buf = createReorderBuffer();
+    expect(buf.push(tok(1))).toEqual([tok(1)]); // frontier = 1
+    expect(buf.push(tok(3))).toEqual([]); // gap at 2 → park 3
+    expect(buf.push(tok(4))).toEqual([]); // still gap at 2 → park 4
+    // the missing 2 finally arrives → 2,3,4 all release together, in order
+    expect(buf.push(tok(2))).toEqual([tok(2), tok(3), tok(4)]);
+    expect(buf.frontier).toBe(4);
+  });
+
   it("reset() clears state for a new turn", () => {
     const buf = createReorderBuffer();
     buf.push(tok(1));
