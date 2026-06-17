@@ -11,9 +11,11 @@
 // segment and reuses the references of every earlier one, so React's reconciler
 // only repaints the growing tail.
 //
-// applyMessage(model, msg) is the live path; buildModel(msgs) folds the same
-// function over replayed history on RESUME, so live and resumed renders can't
-// diverge.
+// applyMessage(model, msg) is the live path; the resume path folds it
+// incrementally too (one replayed frame at a time). buildModel(msgs) is the
+// batch equivalent the resume-parity test folds over a whole history at once —
+// asserting the incremental and batch results agree, so a resumed render can't
+// diverge from the live one.
 
 import type { ServerMessage } from "../protocol/types";
 
@@ -140,8 +142,9 @@ export function applyMessage(model: ChatModel, msg: ServerMessage): ChatModel {
   }
 }
 
-// Fold a whole run of frames into a model — used to rebuild from replayed
-// history on RESUME, sharing applyMessage so it can't diverge from the live path.
+// Batch fold of a whole run of frames. The live and resume paths apply frames
+// one at a time; this folds them all at once via the same applyMessage, and the
+// resume-parity test asserts the two agree.
 export function buildModel(msgs: ServerMessage[]): ChatModel {
   return msgs.reduce(applyMessage, emptyModel);
 }

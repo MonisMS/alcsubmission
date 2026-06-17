@@ -30,35 +30,8 @@ import {
 import { executeCommands } from "../lib/machine/executeCommands";
 import { createReorderBuffer } from "../lib/protocol/reorderBuffer";
 import { createTransport, type Transport } from "../lib/transport/socket";
-import type { ServerMessage } from "../lib/protocol/types";
-
-export type TraceTone = "in" | "out" | "life";
-
-// Consecutive TOKEN frames collapse into one of these, so the timeline stays
-// short (one row per burst) instead of one row per token — which is what keeps
-// it from re-rendering the whole list at the streaming rate.
-export interface TokenGroupEntry {
-  id: number;
-  kind: "tokens";
-  count: number;
-  text: string;
-  startMs: number;
-  endMs: number;
-}
-
-// Any other event: an inbound non-token frame, outbound protocol, or a
-// connection-state transition.
-export interface EventEntry {
-  id: number;
-  kind: "event";
-  tone: TraceTone;
-  label: string;
-  detail: string;
-}
-
-export type TraceEntry = TokenGroupEntry | EventEntry;
-
-const TRACE_CAP = 500; // keep the timeline bounded
+import { inboundDetail, type TraceEntry } from "../lib/trace/trace";
+import { useTrace } from "./useTrace";
 
 export interface AgentConsole {
   status: MachineState["status"];
@@ -67,22 +40,6 @@ export interface AgentConsole {
   model: ChatModel;
   trace: TraceEntry[];
   sendUserMessage: (content: string) => void;
-}
-
-// Short detail line for an inbound (non-token) frame in the timeline.
-function inboundDetail(msg: ServerMessage): string {
-  switch (msg.type) {
-    case "TOOL_CALL":
-      return `${msg.tool_name} ${msg.call_id}`;
-    case "TOOL_RESULT":
-      return msg.call_id;
-    case "CONTEXT_SNAPSHOT":
-      return msg.context_id;
-    case "PING":
-      return `challenge "${msg.challenge}"`;
-    default:
-      return "";
-  }
 }
 
 export function useAgentConsole(url?: string): AgentConsole {
@@ -102,39 +59,8 @@ export function useAgentConsole(url?: string): AgentConsole {
   // React state that drives the UI.
   const [machine, setMachine] = useState<MachineState>(initialState);
   const [model, setModel] = useState<ChatModel>(emptyModel);
-  const [trace, setTrace] = useState<TraceEntry[]>([]);
-  const traceIdRef = useRef(0);
-
-  // Append a discrete event row.
-  const traceEvent = useCallback((label: string, detail: string, tone: TraceTone) => {
-    const id = traceIdRef.current++;
-    setTrace((prev) =>
-      [...prev, { id, kind: "event" as const, tone, label, detail }].slice(-TRACE_CAP),
-    );
-  }, []);
-
-  // Record one token. Grows the trailing token group if there is one, so a
-  // burst of tokens is a single row whose tail is the only thing that repaints.
-  const traceToken = useCallback((text: string) => {
-    const id = traceIdRef.current++;
-    const now = Date.now();
-    setTrace((prev) => {
-      const last = prev[prev.length - 1];
-      if (last && last.kind === "tokens") {
-        const grown: TokenGroupEntry = {
-          ...last,
-          count: last.count + 1,
-          text: last.text + text,
-          endMs: now,
-        };
-        return [...prev.slice(0, -1), grown];
-      }
-      return [
-        ...prev,
-        { id, kind: "tokens" as const, count: 1, text, startMs: now, endMs: now },
-      ].slice(-TRACE_CAP);
-    });
-  }, []);
+  // Timeline log + its two recorders; grouping/cap logic lives in lib/trace.
+  const { trace, traceEvent, traceToken } = useTrace();
 
   // Arm/replace a single-shot timer; firing feeds an event back in.
   const setTimer = useCallback(

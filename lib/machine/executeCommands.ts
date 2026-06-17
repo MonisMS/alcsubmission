@@ -7,6 +7,7 @@ import type { Command, Event } from "./connectionMachine";
 import type { Transport } from "../transport/socket";
 import type { ReorderBuffer } from "../protocol/reorderBuffer";
 import type { ClientMessage } from "../protocol/types";
+import type { TraceTone } from "../trace/trace";
 
 // Short detail line for an outbound frame in the timeline.
 function outboundDetail(msg: ClientMessage): string {
@@ -32,7 +33,7 @@ export interface CommandDeps {
   // New turn: clear the render model + the released-seq tracker.
   onResetTurn: () => void;
   // Optional observability hook for the timeline.
-  onTrace?: (label: string, detail: string, tone: "in" | "out" | "life") => void;
+  onTrace?: (label: string, detail: string, tone: TraceTone) => void;
 }
 
 export function executeCommands(commands: Command[], deps: CommandDeps): void {
