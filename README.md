@@ -6,6 +6,19 @@ snapshots, and it survives a hostile network — out-of-order frames, duplicates
 corrupt heartbeats, and hard mid-stream disconnects — without losing, dropping,
 or duplicating what the user sees.
 
+## Screenshots (normal mode)
+
+A streamed response interrupted by tool calls, with the live trace timeline on
+the right (consecutive tokens collapse into one expandable "Streamed N tokens"
+row):
+
+![Streamed response with tool calls and the trace timeline](docs/streaming-with-tool-call.png)
+
+The context inspector showing a diff between two snapshots of the same
+`context_id` — changed/added keys are highlighted, unchanged keys are muted:
+
+![Context inspector showing a diff](docs/context-diff.png)
+
 ## Architecture in one breath
 
 Four strictly-separated layers; each is ignorant of the ones above it. The
@@ -104,6 +117,26 @@ the full FSM transition table (PING live/replayed/corrupt, RESUME-first,
 mid-stream-drop recovery, stacked tools, ACK race), the stream segment model
 (token-boundary freeze, reference stability, resume parity), and the JSON diff
 engine (incl. a ~500KB perf smoke).
+
+## Deferred (time-boxed, not blockers)
+
+The protocol/chaos/streaming core is complete; a few timeline polish features
+were consciously left out to protect that core's correctness on the deadline,
+and are isolated enough to add without touching it:
+
+- **Bidirectional click-to-highlight** between a timeline row and the chat
+  element it produced (click a tool card → scroll to its `TOOL_CALL` row, and
+  back). The data is already linkable — every tool segment and trace row shares
+  a `call_id` — so this is wiring `ref`s + `scrollIntoView` and a shared
+  "highlighted id", not new state.
+- **TOOL_CALL ↔ TOOL_RESULT visual linking** in the timeline (indent/connector
+  by `call_id`).
+- **Filter/search bar** over the trace (filter by event type, search by
+  content) — a pure filter over the existing trace array.
+- **Context history scrubber** — stepping back/forward through every snapshot
+  for a `context_id`. The model currently retains current + previous (enough to
+  diff); a scrubber would keep the full per-`context_id` list and re-diff at
+  each index.
 
 ## Tech
 
