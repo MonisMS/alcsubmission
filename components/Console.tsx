@@ -1,14 +1,9 @@
 "use client";
 
-// ─────────────────────────────────────────────────────────────
-// Console — the render layer (L4). It reads a clean view-model from
-// useAgentConsole and knows NOTHING about sockets, seq, or reconnection.
-//
-// Streaming-fidelity discipline lives here too: segment components are
-// React.memo'd and keyed by their stable `id`. Because the model gives
-// frozen segments a stable object reference, memo short-circuits them —
-// only the one growing tail segment repaints as tokens arrive.
-// ─────────────────────────────────────────────────────────────
+// The render layer. Reads a clean view-model from useAgentConsole and knows
+// nothing about sockets, seq, or reconnection. Segment components are memoized
+// and keyed by their stable `id`; since frozen segments keep a stable object
+// reference, memo short-circuits them and only the growing tail repaints.
 
 import { memo, useState, type FormEvent } from "react";
 import { useAgentConsole } from "../hooks/useAgentConsole";
@@ -21,7 +16,7 @@ import type {
 } from "../lib/machine/streamModel";
 import type { MachineState } from "../lib/machine/connectionMachine";
 
-// status → label + colour for the indicator pill
+// status -> label + colour for the indicator pill
 const STATUS_META: Record<MachineState["status"], { label: string; dot: string }> = {
   DISCONNECTED: { label: "Disconnected", dot: "bg-zinc-400" },
   CONNECTING: { label: "Connecting…", dot: "bg-amber-400 animate-pulse" },
@@ -51,7 +46,7 @@ function ConnectionIndicator({
   );
 }
 
-// Frozen text never changes ref → memo skips it. The open tail shows a caret.
+// Frozen text keeps its ref, so memo skips it. The open tail shows a caret.
 const TextBubble = memo(function TextBubble({ seg }: { seg: TextSegment }) {
   return (
     <p className="whitespace-pre-wrap break-words leading-7 text-zinc-800 dark:text-zinc-100">
@@ -109,7 +104,7 @@ export function Console() {
 
   return (
     <div className="mx-auto flex h-screen w-full max-w-5xl gap-4 p-4">
-      {/* ── chat column ── */}
+      {/* chat column */}
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <header className="border-b border-zinc-200 pb-3 dark:border-zinc-800">
           <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
@@ -150,7 +145,7 @@ export function Console() {
         </form>
       </div>
 
-      {/* ── right rail: live timeline (debug + demo tool) ── */}
+      {/* right rail: live timeline */}
       <aside className="hidden w-80 shrink-0 flex-col lg:flex">
         <TracePanel trace={trace} />
       </aside>

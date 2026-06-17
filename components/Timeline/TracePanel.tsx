@@ -1,12 +1,9 @@
 "use client";
 
-// ─────────────────────────────────────────────────────────────
-// Timeline / Trace panel (Task 2). A live, ordered log of everything the
-// console did: inbound frames (after ordering+dedupe), outbound protocol,
-// and connection-state transitions. It reads the trace the hook already
-// records — so it doubles as the debugging tool for chaos mode (you can
-// literally watch a drop → reconnect → RESUME → ordered replay happen).
-// ─────────────────────────────────────────────────────────────
+// Trace panel — a live, ordered log of everything the console did: inbound
+// frames (after ordering + dedupe), outbound protocol, and connection-state
+// transitions. Reads the trace the hook records, so it doubles as a debugging
+// tool in chaos mode: you can watch a drop -> reconnect -> RESUME -> replay.
 
 import { memo } from "react";
 import type { TraceEntry, TraceTone } from "../../hooks/useAgentConsole";
@@ -37,7 +34,7 @@ export function TracePanel({ trace }: { trace: TraceEntry[] }) {
         {trace.length === 0 ? (
           <p className="px-3 py-2 text-xs text-zinc-400">No events yet.</p>
         ) : (
-          // newest first so the latest activity is always visible
+          // newest first so the latest activity stays visible
           trace.slice().reverse().map((e) => <TraceRow key={e.id} entry={e} />)
         )}
       </div>

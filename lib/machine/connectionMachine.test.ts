@@ -8,7 +8,7 @@ import {
 } from "./connectionMachine";
 import type { ServerMessage } from "../protocol/types";
 
-// ── tiny builders so tests read like prose ──
+// small builders so the tests read cleanly
 const recv = (msg: ServerMessage) => ({ type: "RECEIVE" as const, msg });
 const ping = (challenge: string, seq = 1): ServerMessage => ({ type: "PING", seq, challenge });
 const toolCall = (call_id: string, seq = 1): ServerMessage => ({

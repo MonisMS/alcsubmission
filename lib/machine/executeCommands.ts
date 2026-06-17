@@ -1,21 +1,14 @@
-// ─────────────────────────────────────────────────────────────
-// Command interpreter — the "flush" layer.
-//
-// The FSM is pure: it can only DESCRIBE side-effects as Command objects.
-// This is the one place those descriptions actually happen: opening the
-// socket, sending a frame, resetting the buffer, arming a timer.
-//
-// It's a plain function (not a hook) so it can be unit-tested with fake
-// deps and so the React layer stays thin. Everything it touches arrives
-// through `deps` — it has no globals, no imports of the socket, no React.
-// ─────────────────────────────────────────────────────────────
+// The flush layer. The FSM only describes side-effects as Command objects;
+// this is where they actually happen — opening the socket, sending a frame,
+// resetting the buffer, arming a timer. A plain function (not a hook) so it
+// can be tested with fake deps; everything it touches comes through `deps`.
 
 import type { Command, Event } from "./connectionMachine";
 import type { Transport } from "../transport/socket";
 import type { ReorderBuffer } from "../protocol/reorderBuffer";
 import type { ClientMessage } from "../protocol/types";
 
-// a short, human-readable detail line for an outbound frame in the Timeline
+// Short detail line for an outbound frame in the timeline.
 function outboundDetail(msg: ClientMessage): string {
   switch (msg.type) {
     case "PONG":
@@ -34,12 +27,11 @@ export interface CommandDeps {
   buffer: ReorderBuffer;
   // Feed an event back into the machine (used by timers).
   dispatch: (event: Event) => void;
-  // Arm a single-shot timer of a given kind; firing dispatches `event`.
-  // Re-arming the same kind cancels the previous one (idempotent).
+  // Arm a single-shot timer; re-arming the same kind cancels the previous one.
   setTimer: (kind: "backoff" | "replay", ms: number, event: Event) => void;
   // New turn: clear the render model + the released-seq tracker.
   onResetTurn: () => void;
-  // Optional observability hook for the Timeline (no-op if absent).
+  // Optional observability hook for the timeline.
   onTrace?: (label: string, detail: string, tone: "in" | "out" | "life") => void;
 }
 
@@ -50,8 +42,7 @@ export function executeCommands(commands: Command[], deps: CommandDeps): void {
         deps.transport?.connect();
         break;
       case "SEND":
-        // PONG / TOOL_ACK / RESUME / USER_MESSAGE all flow through here —
-        // never sent inline from the reducer.
+        // PONG / TOOL_ACK / RESUME / USER_MESSAGE all flow through here.
         deps.transport?.send(cmd.msg);
         deps.onTrace?.(`↑ ${cmd.msg.type}`, outboundDetail(cmd.msg), "out");
         break;

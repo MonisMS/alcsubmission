@@ -1,16 +1,9 @@
-// ─────────────────────────────────────────────────────────────
-// Wire protocol types — client-side mirror of agent-server/src/types.ts
-//
-// We deliberately copy ONLY the messages that cross the WebSocket.
-// The server's internals (ChaosConfig, ResponseScript, ClientLogEntry,
-// ServerMode) are NOT mirrored — the client never sees them.
-//
-// If the server ever changes a field, the divergence should surface
-// here as a type error where these are consumed.
-// ─────────────────────────────────────────────────────────────
+// Client-side mirror of the wire protocol (agent-server/src/types.ts). Only the
+// messages that actually cross the WebSocket are copied here; the server's
+// internals are not. A field change on the server should surface as a type
+// error where these are consumed.
 
-// ── Server → Client ───────────────────────────────────────────
-// Every server message carries a `type` discriminant and a `seq`.
+// Server -> Client. Every message carries a `type` discriminant and a `seq`.
 
 export interface TokenMessage {
   type: "TOKEN";
@@ -71,8 +64,7 @@ export type ServerMessage =
   | StreamEndMessage
   | ErrorMessage;
 
-// ── Client → Server ───────────────────────────────────────────
-// NOTE: client messages carry NO seq number.
+// Client -> Server. These carry no seq.
 
 export interface UserMessagePayload {
   type: "USER_MESSAGE";
@@ -81,12 +73,12 @@ export interface UserMessagePayload {
 
 export interface PongPayload {
   type: "PONG";
-  echo: string; // ⚠ field is `echo`, NOT `challenge` — holds the PING's challenge verbatim
+  echo: string; // field is `echo`, not `challenge`; holds the PING challenge verbatim
 }
 
 export interface ResumePayload {
   type: "RESUME";
-  last_seq: number; // highest seq RENDERED TO DOM (the "DOM frontier"), not merely received
+  last_seq: number; // highest seq rendered to DOM, not merely received
 }
 
 export interface ToolAckPayload {

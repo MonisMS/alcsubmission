@@ -1,15 +1,10 @@
 "use client";
 
-// ─────────────────────────────────────────────────────────────
-// Context Inspector (Task 3). Renders the latest CONTEXT_SNAPSHOT as a tree
-// and highlights what changed since the previous snapshot using the pure
-// diff engine (lib/protocol/diff.ts).
-//
-// Scale strategy for ~500KB payloads: the tree is LAZY. Unchanged container
-// subtrees are collapsed by default (and not rendered until expanded), while
-// the path to every change auto-expands — so a mostly-unchanged snapshot shows
-// only its deltas, and we never build DOM for the parts nobody is looking at.
-// ─────────────────────────────────────────────────────────────
+// Context inspector. Renders the latest CONTEXT_SNAPSHOT as a tree and
+// highlights what changed since the previous snapshot via the diff engine.
+// The tree is lazy: unchanged container subtrees stay collapsed (and aren't
+// rendered until expanded) while the path to each change auto-expands, so a
+// half-megabyte snapshot only builds DOM for the deltas you're looking at.
 
 import { memo, useState } from "react";
 import { diffJson, type DiffNode } from "../../lib/protocol/diff";
@@ -39,12 +34,12 @@ const DiffRow = memo(function DiffRow({
   depth: number;
 }) {
   const hasChildren = node.children !== undefined;
-  // auto-expand the path to changes; hide unchanged subtrees by default
+  // Auto-expand the path to changes; keep unchanged subtrees collapsed.
   const [open, setOpen] = useState(node.kind === "changed" || node.kind === "added");
   const indent = { paddingLeft: `${depth * 14}px` };
 
   if (!hasChildren) {
-    // leaf: show value, and before→after when it changed
+    // Leaf: show the value, and before -> after when it changed.
     return (
       <div style={indent} className="font-mono text-xs leading-6">
         <span className="text-zinc-400">{label}: </span>
@@ -92,7 +87,7 @@ export function ContextPanel({
   previousContext: ContextSnapshot | null;
 }) {
   if (!context) return null;
-  // baseline {} on the first snapshot ⇒ everything reads as "added"
+  // Baseline against {} on the first snapshot, so everything reads as "added".
   const tree = diffJson(previousContext?.data ?? {}, context.data);
   const approxKB = Math.round(JSON.stringify(context.data).length / 1024);
 
